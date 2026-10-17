@@ -30,19 +30,6 @@ input:focus,select:focus,textarea:focus{outline:2px solid #2f7bff}
 label{font-size:.75rem;color:#8d98ad;display:block;margin-bottom:.25rem}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 
-.ring{transform-box:fill-box;transform-origin:center;animation:rot 22s linear infinite}
-.ring2{animation-duration:34s;animation-direction:reverse}
-@keyframes rot{to{transform:rotate(360deg)}}
-.bob{animation:bob 3.6s ease-in-out infinite}
-@keyframes bob{50%{transform:translateY(-7px)}}
-.eye{animation:eye 4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
-@keyframes eye{0%,90%,100%{transform:scaleY(1);opacity:1}94%{transform:scaleY(.1)}50%{opacity:.75}}
-.sp{animation:rise 5s ease-in infinite;animation-delay:var(--d)}
-@keyframes rise{0%{transform:translateY(0);opacity:0}20%{opacity:.9}100%{transform:translateY(-230px);opacity:0}}
-.sweep{animation:swp 5s ease-in-out infinite}
-@keyframes swp{0%,60%{transform:translateX(-140px);opacity:0}70%{opacity:.5}100%{transform:translateX(340px);opacity:0}}
-.aura{animation:aur 3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
-@keyframes aur{50%{transform:scale(1.12);opacity:.5}}
 .stp{width:36px;height:36px;border:1px solid #1b2438;border-radius:10px;color:#fff;background:#080b13;font-size:18px}
 .row{animation:fd .5s both;animation-delay:calc(var(--i)*70ms)}
 
@@ -54,8 +41,6 @@ label{font-size:.75rem;color:#8d98ad;display:block;margin-bottom:.25rem}
 .badge{display:grid;place-items:center;width:34px;height:38px;color:#04101f;font-weight:800;font-size:13px;clip-path:polygon(50% 0,100% 20%,100% 70%,50% 100%,0 70%,0 20%);flex:none;align-self:center}
 .modal{position:fixed;inset:0;z-index:50;background:rgba(2,4,10,.82);backdrop-filter:blur(6px);display:grid;place-items:center;padding:20px}
 </style>
-svg[aria-label^="Ksatria"]{display:none}
-section.fade{animation:none!important}
 </head>
 <body>
 <div id="root"></div>
