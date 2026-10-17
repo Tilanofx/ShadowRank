@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SHADOWRANK — Your Rank, Our Mission</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>tailwind.config={theme:{extend:{colors:{ink:'#07090f',panel:'#0d111b',line:'#1b2438',volt:'#2f7bff',ice:'#4cc3ff',silver:'#c9d1de'}}}}</script>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{background:#07090f;color:#c9d1de;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background-image:radial-gradient(ellipse at 50% -10%,#12254d 0,transparent 60%)}
+.glow{box-shadow:0 0 28px -6px #2f7bff}
+.float{animation:fl 4s ease-in-out infinite}
+@keyframes fl{50%{transform:translateY(-8px)}}
+.pulse-ring{animation:pr 2.4s ease-out infinite}
+@keyframes pr{0%{opacity:.6;transform:scale(.8)}100%{opacity:0;transform:scale(1.6)}}
+.spin{animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.fade{animation:fd .5s ease both}
+@keyframes fd{from{opacity:0;transform:translateY(10px)}}
+.btn{background:linear-gradient(135deg,#2f7bff,#4cc3ff);color:#04101f;font-weight:700;border-radius:12px;padding:.75rem 1.25rem}
+.btn2{border:1px solid #2f7bff;color:#c9d1de;border-radius:12px;padding:.75rem 1.25rem;font-weight:600}
+input,select,textarea{background:#080b13;border:1px solid #1b2438;border-radius:10px;padding:.65rem .8rem;width:100%;color:#fff}
+input:focus,select:focus,textarea:focus{outline:2px solid #2f7bff}
+label{font-size:.75rem;color:#8d98ad;display:block;margin-bottom:.25rem}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+
+.ring{transform-box:fill-box;transform-origin:center;animation:rot 22s linear infinite}
+.ring2{animation-duration:34s;animation-direction:reverse}
+@keyframes rot{to{transform:rotate(360deg)}}
+.bob{animation:bob 3.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-7px)}}
+.eye{animation:eye 4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes eye{0%,90%,100%{transform:scaleY(1);opacity:1}94%{transform:scaleY(.1)}50%{opacity:.75}}
+.sp{animation:rise 5s ease-in infinite;animation-delay:var(--d)}
+@keyframes rise{0%{transform:translateY(0);opacity:0}20%{opacity:.9}100%{transform:translateY(-230px);opacity:0}}
+.sweep{animation:swp 5s ease-in-out infinite}
+@keyframes swp{0%,60%{transform:translateX(-140px);opacity:0}70%{opacity:.5}100%{transform:translateX(340px);opacity:0}}
+.aura{animation:aur 3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes aur{50%{transform:scale(1.12);opacity:.5}}
+.stp{width:36px;height:36px;border:1px solid #1b2438;border-radius:10px;color:#fff;background:#080b13;font-size:18px}
+.row{animation:fd .5s both;animation-delay:calc(var(--i)*70ms)}
+
+.slash{animation:slash 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:bottom center}
+.slash.r{animation-direction:reverse}
+@keyframes slash{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(9deg)}}
+.trail{animation:trl 1.6s ease-out infinite}
+@keyframes trl{0%{transform:translateX(24px);opacity:0}30%{opacity:.8}100%{transform:translateX(-44px);opacity:0}}
+.badge{display:grid;place-items:center;width:34px;height:38px;color:#04101f;font-weight:800;font-size:13px;clip-path:polygon(50% 0,100% 20%,100% 70%,50% 100%,0 70%,0 20%);flex:none;align-self:center}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(2,4,10,.82);backdrop-filter:blur(6px);display:grid;place-items:center;padding:20px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {useState,useEffect,useMemo}=React;
+const html=htm.bind(React.createElement);
+const rp=n=>'Rp'+(Number(n)||0).toLocaleString('id-ID');
+// ====== KONFIGURASI (isi setelah setup Supabase; anon key memang publik, JANGAN isi service_role) ======
+const CFG={SUPABASE_URL:'https://aqtjesqeyiewykopszlv.supabase.co',SUPABASE_ANON_KEY:'sb_publishable_IA7yqwGaC7Xb-OhbAmmKGg_LWymw1ZG',ADMIN_WA:'6282290477292'};
+const LIVE=!!(CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY);
+const sb=LIVE?supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON_KEY):null;
+const api=async body=>{const {data,error}=await sb.functions.invoke('shadowrank-api',{body});
+ if(error){let m='Gagal terhubung ke server.';try{m=(await error.context.json()).error||m}catch(e){}throw new Error(m)}return data};
+// Katalog resmi (tampilan awal/cadangan). Harga yang BERLAKU selalu dari tabel services di server.
+const TIERS=[['master','Master',2000],['grandmaster','Grandmaster',3000],['epic','Epic',5000],['legend','Legend',6000],['mythic','Mythic',10000],['honor','Mythic Honor',15000],['glory','Mythic Glory',20000],['immortal','Mythic Immortal',25000]];
+const RANKS=TIERS.map(t=>t[1]);
+const STATUS=['Menunggu','Diproses','Selesai','Dibatalkan'];
+const toSvc=t=>({id:t[0],name:'Joki Bintang '+t[1],desc:'Naik bintang di tier '+t[1]+' oleh joki berpengalaman.',unit:'bintang',price:t[2],min:1,on:true});
+
+function Logo({size=48}){return html`<svg width=${size} height=${size} viewBox="0 0 64 64" aria-label="Logo SHADOWRANK"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4cc3ff"/><stop offset="1" stop-color="#2f7bff"/></linearGradient></defs><path d="M10 22l9 8 13-16 13 16 9-8-4 16H14z" fill="none" stroke="url(#g)" stroke-width="3" stroke-linejoin="round"/><circle cx="32" cy="10" r="2.5" fill="#c9d1de"/><text x="32" y="56" text-anchor="middle" font-family="system-ui" font-weight="800" font-size="19" fill="#c9d1de" letter-spacing="1">SR</text></svg>`}
+
+function Nav({setView,view}){return html`<header className="sticky top-0 z-30 backdrop-blur bg-ink/80 border-b border-line"><div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-2">
+ <button onClick=${()=>setView('home')} className="flex items-center gap-2"><${Logo} size=${34}/><b className="tracking-widest text-white text-sm">SHADOWRANK</b></button>
+ <nav className="flex gap-3 text-xs">${view==='home'?html`<a href="#katalog">Harga</a><a href="#status">Status</a><a href="#faq">FAQ</a>`:html`<button onClick=${()=>setView('home')}>← Kembali ke Beranda</button>`}
+ <button onClick=${()=>setView(view==='admin'?'home':'admin')} className="text-ice">Admin</button></nav></div></header>`}
+
+function Hero(){
+ const sparks=[[60,300,0],[95,320,1.2],[130,310,2.4],[170,315,.6],[205,305,1.8],[240,318,3],[110,290,3.6],[190,295,4.2]];
+ return html`<section className="text-center px-4 pt-10 pb-8 max-w-xl mx-auto fade">
+ <div className="relative mx-auto" style=${{maxWidth:300}}>
+  <svg viewBox="0 0 300 340" className="w-full" role="img" aria-label="Ksatria bayangan SHADOWRANK (karakter orisinal)">
+   <defs>
+    <radialGradient id="hg" cx="50%" cy="55%" r="55%"><stop offset="0" stop-color="#2f7bff" stop-opacity=".55"/><stop offset="1" stop-color="#2f7bff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="cl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a2542"/><stop offset="1" stop-color="#05070d"/></linearGradient>
+    <linearGradient id="cr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9d1de"/><stop offset="1" stop-color="#4cc3ff"/></linearGradient>
+    <filter id="gl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="cp"><path d="M150 62C106 62 86 106 91 150 60 182 40 252 30 332H270C260 252 240 182 209 150 214 106 194 62 150 62Z"/></clipPath>
+   </defs>
+   <circle cx="150" cy="180" r="140" fill="url(#hg)" className="aura"/>
+   <g className="ring"><circle cx="150" cy="180" r="128" fill="none" stroke="#2f7bff" stroke-opacity=".45" stroke-dasharray="4 10"/></g>
+   <g className="ring ring2"><circle cx="150" cy="180" r="104" fill="none" stroke="#4cc3ff" stroke-opacity=".3" stroke-dasharray="40 14"/></g>
+   ${sparks.map(([x,y,d],i)=>html`<circle key=${i} className="sp" style=${{'--d':d+'s'}} cx=${x} cy=${y} r=${i%3?1.6:2.4} fill="#4cc3ff" filter="url(#gl)"/>`)}
+   <path d="M150 62C106 62 86 106 91 150 60 182 40 252 30 332H270C260 252 240 182 209 150 214 106 194 62 150 62Z" fill="url(#cl)" stroke="#2f7bff" stroke-opacity=".7" stroke-width="1.5"/>
+   <path d="M95 190C120 215 180 215 205 190M110 240C135 262 165 262 190 240" fill="none" stroke="#4cc3ff" stroke-opacity=".35"/>
+   <path d="M150 92C124 92 114 124 119 150 125 178 175 178 181 150 186 124 176 92 150 92Z" fill="#02040a"/>
+   <g filter="url(#gl)"><ellipse className="eye" cx="136" cy="136" rx="10" ry="3.6" fill="#4cc3ff" transform="rotate(8 136 136)"/><ellipse className="eye" cx="164" cy="136" rx="10" ry="3.6" fill="#4cc3ff" transform="rotate(-8 164 136)"/></g>
+   <g clipPath="url(#cp)"><rect className="sweep" x="0" y="40" width="26" height="300" fill="#c9d1de" opacity=".35" transform="skewX(-18)"/></g>
+   <g className="bob" filter="url(#gl)"><polygon points="108,44 116,16 133,31 150,6 167,31 184,16 192,44" fill="none" stroke="url(#cr)" stroke-width="3" stroke-linejoin="round"/><circle cx="150" cy="6" r="3" fill="#c9d1de"/></g>
+   <ellipse cx="150" cy="334" rx="120" ry="8" fill="#2f7bff" opacity=".35" className="aura"/>
+  </svg>
+ </div>
+ <h1 className="mt-2 text-4xl font-extrabold tracking-[.25em] text-white">SHADOWRANK</h1>
+ <p className="mt-2 text-ice tracking-widest text-sm">Your Rank, Our Mission</p>
+ <p className="mt-4 text-sm text-silver/80">Jasa joki Mobile Legends profesional, aman, dan transparan. Tanpa minta password atau OTP lewat formulir.</p>
+ <div className="mt-6 flex gap-3 justify-center"><a href="#pesan" className="btn glow">Order Sekarang</a><a href="#katalog" className="btn2">Lihat Harga</a></div>
+ <div className="mt-8 grid grid-cols-3 gap-2 text-xs">${[['⚡','Pengerjaan cepat'],['🛡️','Proses aman'],['💬','Update via WA']].map(([i,t])=>html`<div key=${t} className="bg-panel border border-line rounded-xl py-3"><div className="text-lg">${i}</div>${t}</div>`)}</div></section>`}
+
+const BADGE=['#8b97ab','#8fb0e6','#6fa3ff','#4f8fff','#3a7bff','#2f7bff','#35a0ff','#4cc3ff'];
+function Duo(){return html`<svg viewBox="0 0 360 150" className="w-full mb-4" role="img" aria-label="Dua karakter orisinal SHADOWRANK: penyihir waktu dan petarung bilah cahaya">
+ <defs><linearGradient id="bl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#4cc3ff" stopOpacity="0"/><stop offset="1" stopColor="#4cc3ff"/></linearGradient></defs>
+ <ellipse cx="90" cy="146" rx="70" ry="5" fill="#2f7bff" opacity=".3" className="aura"/><ellipse cx="270" cy="146" rx="70" ry="5" fill="#2f7bff" opacity=".3" className="aura"/>
+ <g><path d="M90 34C72 34 64 52 67 70 54 84 48 112 44 144H136C132 112 126 84 113 70 116 52 108 34 90 34Z" fill="url(#cl)" stroke="#2f7bff" strokeOpacity=".7"/><path d="M90 48C80 48 76 60 78 70 80 82 100 82 102 70 104 60 100 48 90 48Z" fill="#02040a"/>
+  <g filter="url(#gl)"><ellipse className="eye" cx="83" cy="64" rx="5" ry="2" fill="#4cc3ff"/><ellipse className="eye" cx="97" cy="64" rx="5" ry="2" fill="#4cc3ff"/></g>
+  <ellipse cx="90" cy="100" rx="58" ry="14" fill="none" stroke="#4cc3ff" strokeOpacity=".5" strokeDasharray="6 8"/>
+  <g filter="url(#gl)"><circle r="3.5" fill="#4cc3ff"><animateMotion dur="3.6s" repeatCount="indefinite" path="M32 100a58 14 0 1 0 116 0a58 14 0 1 0 -116 0"/></circle><circle r="2.5" fill="#c9d1de"><animateMotion dur="3.6s" begin="-1.8s" repeatCount="indefinite" path="M32 100a58 14 0 1 0 116 0a58 14 0 1 0 -116 0"/></circle></g>
+  <g className="bob" filter="url(#gl)"><path d="M78 4H102L90 18 102 32H78L90 18Z" fill="none" stroke="#c9d1de" strokeWidth="2" strokeLinejoin="round"/></g></g>
+ <g transform="translate(180 0)"><path d="M90 34C72 34 64 52 67 70 54 84 48 112 44 144H136C132 112 126 84 113 70 116 52 108 34 90 34Z" fill="url(#cl)" stroke="#2f7bff" strokeOpacity=".7"/><path d="M90 48C80 48 76 60 78 70 80 82 100 82 102 70 104 60 100 48 90 48Z" fill="#02040a"/>
+  <g filter="url(#gl)"><ellipse className="eye" cx="83" cy="64" rx="5" ry="2" fill="#4cc3ff"/><ellipse className="eye" cx="97" cy="64" rx="5" ry="2" fill="#4cc3ff"/>
+  <g className="slash"><line x1="56" y1="112" x2="22" y2="58" stroke="#c9d1de" strokeWidth="3" strokeLinecap="round"/></g>
+  <g className="slash r"><line x1="124" y1="112" x2="158" y2="58" stroke="#4cc3ff" strokeWidth="3" strokeLinecap="round"/></g></g>
+  <rect className="trail" x="-10" y="118" width="60" height="3" fill="url(#bl)"/><rect className="trail" style=${{animationDelay:'.5s'}} x="-4" y="130" width="50" height="3" fill="url(#bl)"/><rect className="trail" style=${{animationDelay:'1s'}} x="0" y="124" width="40" height="2" fill="url(#bl)"/></g>
+</svg>`}
+
+function Welcome(){
+ const [show,setShow]=useState(()=>{try{return !sessionStorage.getItem('sr_w')}catch(e){return true}});
+ if(!show)return null;
+ const close=()=>{try{sessionStorage.setItem('sr_w','1')}catch(e){}setShow(false)};
+ return html`<div className="modal fade" role="dialog" aria-modal="true"><div className="bg-panel border border-volt rounded-2xl p-6 max-w-sm text-center glow"><div className="inline-block float"><${Logo} size=${72}/></div>
+  <h2 className="text-xl font-extrabold text-white mt-2">Selamat Datang di SHADOWRANK</h2><p className="text-ice text-xs tracking-widest mt-1">Your Rank, Our Mission</p>
+  <p className="text-sm mt-3">Terima kasih sudah mampir! Pilih tier di katalog, isi form singkat, dan tim kami akan mengerjakan rank-mu dengan aman dan transparan.</p>
+  <p className="text-xs mt-3 text-amber-300/90">Kami tidak pernah meminta password atau OTP lewat website.</p>
+  <button className="btn w-full mt-4" onClick=${close}>Mulai Pesan</button></div></div>`}
+
+function Sticky({pre,services}){
+ const s=pre&&services.find(x=>x.id===pre.sid);
+ return html`<div className="fixed bottom-0 inset-x-0 z-20 bg-black/90 backdrop-blur border-t border-line px-4 pt-3" style=${{paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 12px)'}}><div className="max-w-xl mx-auto flex items-center gap-3">
+  <div className="flex-1 text-xs min-w-0">${s?html`<b className="text-white">${s.name.replace('Joki Bintang ','')} × ${pre.qty}</b><br/><span className="text-ice">${rp(pre.qty*s.price)}</span>`:'Belum ada item produk yang dipilih.'}</div>
+  <a href="#pesan" className="btn !py-2 text-sm whitespace-nowrap">Pesan Sekarang!</a></div></div>`}
+
+function Catalog({services,pick}){
+ const [q,setQ]=useState({});
+ const on=services.filter(s=>s.on);
+ return html`<section id="katalog" className="px-4 py-8 max-w-xl mx-auto"><h2 className="text-xl font-bold text-white">Katalog Harga</h2><p className="text-xs text-silver/60 mb-3">Harga per bintang. Atur jumlah, lalu tekan Pesan.</p><${Duo}/>
+ <div className="rounded-2xl border border-line overflow-hidden bg-panel/70">${on.map((s,i)=>{const n=q[s.id]??1;const set=v=>setQ({...q,[s.id]:Math.max(1,Math.min(500,Math.round(+v||1)))});return html`
+  <div key=${s.id} className="row p-4 border-b border-line last:border-0 flex gap-3" style=${{'--i':i}}>
+   <span className="badge" style=${{background:BADGE[i%8]}}>${i+1}</span>
+   <div className="flex-1">
+    <div className="flex justify-between items-baseline"><div><b className="text-white">${s.name.replace('Joki Bintang ','')}</b><div className="text-xs text-ice">${rp(s.price)} <span className="text-silver/50">/ bintang</span></div></div><b className="text-white">${rp(n*s.price)}</b></div>
+    <div className="flex justify-between items-center mt-3"><div className="flex items-center gap-1"><button className="stp" aria-label="Kurangi" onClick=${()=>set(n-1)}>−</button><input type="number" min="1" max="500" value=${n} onChange=${e=>set(e.target.value)} style=${{width:64,textAlign:'center'}}/><button className="stp" aria-label="Tambah" onClick=${()=>set(n+1)}>+</button></div>
+    <button className="btn !py-2 !px-5 text-sm" onClick=${()=>pick(s.id,n)}>Pesan</button></div></div></div>`})}</div></section>`}
+
+function OrderForm({services,pre}){
+ const act=services.filter(s=>s.on);
+ const [f,setF]=useState({name:'',wa:'',sid:act[0]?.id,from:'Master',to:'Grandmaster',qty:1,note:'',hp:''});
+ const [busy,setBusy]=useState(false),[err,setErr]=useState(''),[res,setRes]=useState(null),[agree,setAgree]=useState(false);
+ useEffect(()=>{if(pre)setF(x=>({...x,sid:pre.sid,qty:pre.qty}))},[pre]);
+ const s=services.find(x=>x.id===f.sid)||act[0];
+ const est=(+f.qty||0)*s.price;
+ const set=k=>e=>setF({...f,[k]:e.target.value});
+ const submit=async()=>{
+  setErr('');
+  if(!LIVE)return setErr('Database belum terhubung (mode demo). Pesanan tidak dapat disimpan.');
+  if(f.name.trim().length<2||!/^(\+?62|0)8\d{7,12}$/.test(f.wa.replace(/[\s-]/g,'')))return setErr('Isi nama dan nomor WhatsApp valid (08xx atau 628xx).');
+  if(RANKS.indexOf(f.to)<RANKS.indexOf(f.from))return setErr('Rank tujuan harus sama atau lebih tinggi dari rank saat ini.');
+  if(!(+f.qty>=1&&+f.qty<=500))return setErr('Jumlah bintang 1–500.');
+  setBusy(true);
+  try{setRes(await api({action:'create_order',name:f.name,wa:f.wa,service:f.sid,rank_from:f.from,rank_to:f.to,qty:+f.qty,note:f.note,hp:f.hp}))}
+  catch(e){setErr(e.message)}
+  setBusy(false)};
+ if(res){
+  const msg=`Halo SHADOWRANK, saya sudah membuat pesanan:\n\nNo. Pesanan: ${res.order_no}\nNama: ${f.name}\nLayanan: ${s.name}\nRank Awal: ${f.from}\nTarget: ${f.to}\nJumlah: ${f.qty} bintang\nTotal: ${rp(res.total)}\nCatatan: ${f.note||'-'}\n\nMohon info pembayaran. Saya tidak akan membagikan password/OTP.`;
+  return html`<section id="pesan" className="px-4 py-8 max-w-xl mx-auto"><div className="bg-panel border border-volt rounded-2xl p-5 text-center fade glow">
+   <div className="text-3xl">✅</div><h2 className="text-lg font-bold text-white mt-1">Pesanan Tersimpan</h2>
+   <p className="text-xs mt-1">Nomor pesanan Anda (simpan untuk cek status)</p><b className="block text-2xl text-ice tracking-wider my-1">${res.order_no}</b>
+   <p className="text-sm">Total (dihitung server): <b className="text-white">${rp(res.total)}</b></p>
+   <p className="text-xs mt-2 text-silver/70">Status pembayaran: belum terverifikasi. Berubah menjadi Lunas hanya setelah admin memverifikasi.</p>
+   <a className="btn block mt-4" target="_blank" rel="noopener" href=${`https://wa.me/${CFG.ADMIN_WA}?text=${encodeURIComponent(msg)}`}>Lanjut ke WhatsApp Admin</a>
+   <button className="text-xs text-ice mt-3" onClick=${()=>{setRes(null);setF({...f,note:''})}}>Buat pesanan baru</button></div></section>`}
+ return html`<section id="pesan" className="px-4 py-8 max-w-xl mx-auto"><h2 className="text-xl font-bold text-white mb-4">Form Pemesanan</h2>
+ <div className="rounded-2xl border border-amber-300/40 bg-amber-300/10 p-4 mb-4 text-sm"><b className="text-amber-300">⚠️ PERINGATAN SEBELUM MEMESAN</b>
+  <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-silver"><li>Jangan pernah mengirim <b>password, OTP, atau data login</b> game lewat form, catatan, maupun chat.</li><li>Pastikan rank, target, dan jumlah bintang sudah benar.</li><li>Pesanan sah setelah pembayaran <b>diverifikasi admin</b>.</li><li>Joki melanggar ketentuan game tertentu; risiko akun ditanggung pelanggan.</li></ul>
+  <label className="flex items-start gap-2 mt-3 text-silver"><input type="checkbox" className="!w-auto mt-0.5" checked=${agree} onChange=${e=>setAgree(e.target.checked)}/> Saya sudah membaca dan memahami peringatan di atas.</label></div>
+ <div className="bg-panel border border-line rounded-2xl p-4 space-y-3">
+  <div className="text-xs">Nomor pesanan dibuat otomatis oleh server setelah data tersimpan.</div>
+  <div><label>Nama / Nickname</label><input maxLength="60" value=${f.name} onChange=${set('name')} placeholder="Nickname in-game"/></div>
+  <div><label>Nomor WhatsApp</label><input inputMode="tel" value=${f.wa} onChange=${set('wa')} placeholder="08xxxxxxxxxx"/></div>
+  <input tabIndex="-1" autoComplete="off" aria-hidden="true" style=${{position:'absolute',left:'-9999px',width:1,height:1,opacity:0}} value=${f.hp} onChange=${set('hp')}/>
+  <div><label>Tier Harga (per bintang)</label><select value=${f.sid} onChange=${set('sid')}>${act.map(x=>html`<option key=${x.id} value=${x.id}>${x.name} — ${rp(x.price)}</option>`)}</select></div>
+  <div className="grid grid-cols-2 gap-3"><div><label>Rank Saat Ini</label><select value=${f.from} onChange=${set('from')}>${RANKS.map(r=>html`<option key=${r}>${r}</option>`)}</select></div>
+  <div><label>Rank Tujuan</label><select value=${f.to} onChange=${set('to')}>${RANKS.map(r=>html`<option key=${r}>${r}</option>`)}</select></div></div>
+  <div><label>Jumlah Bintang (1–500)</label><input type="number" min="1" max="500" value=${f.qty} onChange=${set('qty')}/></div>
+  <div><label>Catatan (opsional)</label><textarea rows="2" maxLength="300" value=${f.note} onChange=${set('note')} placeholder="Hero favorit, jam bermain, dll."></textarea></div>
+  <p className="text-xs text-amber-300/90 bg-amber-300/10 rounded-lg p-2">🔒 Jangan kirim password, OTP, atau data login game di form maupun catatan.</p>
+  <div className="flex justify-between items-center border-t border-line pt-3"><span className="text-xs">Estimasi ${f.qty||0} × ${rp(s.price)}<br/>(dihitung ulang server)</span><b className="text-2xl text-white">${rp(est)}</b></div>
+  ${err&&html`<p className="text-sm text-red-300 bg-red-400/10 rounded-lg p-2">${err}</p>`}
+  <button disabled=${busy||!agree} className="btn w-full glow disabled:opacity-50" onClick=${submit}>${busy?'Menyimpan…':'Kirim Pesanan'}</button>
+ </div>
+ <h3 className="mt-6 mb-2 font-semibold text-white">Metode Pembayaran</h3>
+ <div className="grid grid-cols-2 gap-2 text-sm">${['DANA','GoPay','OVO','Transfer Bank'].map(m=>html`<div key=${m} className="bg-panel border border-line rounded-xl p-3 text-center">${m}</div>`)}</div>
+ <p className="text-xs mt-2 text-silver/70">Nomor tujuan diberikan admin lewat WhatsApp. Status "Lunas" hanya berubah setelah admin memverifikasi bukti bayar.</p></section>`}
+
+function Track(){
+ const [no,setNo]=useState(''),[l4,setL4]=useState(''),[r,setR]=useState(undefined),[b,setB]=useState(false);
+ const go=async()=>{if(!LIVE)return setR({error:'Database belum terhubung (mode demo).'});setB(true);try{setR(await api({action:'track',order_no:no,last4:l4}))}catch(e){setR({error:e.message})}setB(false)};
+ return html`<section id="status" className="px-4 py-8 max-w-xl mx-auto"><h2 className="text-xl font-bold text-white mb-3">Status Pesanan</h2>
+ <div className="space-y-2"><input value=${no} onChange=${e=>setNo(e.target.value)} placeholder="Nomor pesanan, mis. SR-261017-AB12CD"/>
+ <div className="flex gap-2"><input inputMode="numeric" maxLength="4" value=${l4} onChange=${e=>setL4(e.target.value)} placeholder="4 digit terakhir WhatsApp"/><button className="btn" disabled=${b} onClick=${go}>Cek</button></div></div>
+ ${r&&r.error&&html`<p className="mt-3 text-sm text-red-300">${r.error}</p>`}
+ ${r&&r.found===false&&html`<p className="mt-3 text-sm">Pesanan tidak ditemukan atau data tidak cocok.</p>`}
+ ${r&&r.found&&html`<div className="mt-3 bg-panel border border-line rounded-xl p-3 text-sm fade">Status: <b className="text-ice">${r.status}</b><br/>Pembayaran: <b>${r.payment_status==='lunas'?'Lunas (terverifikasi admin)':'Belum terverifikasi'}</b>${r.payment_status==='lunas'&&html`<div className="mt-3 rounded-xl p-3 text-center glow border border-volt fade">🎉 <b className="text-white">Pembayaran terverifikasi, Lunas!</b><br/>Terima kasih sudah mempercayai SHADOWRANK. Pesananmu masuk antrean dan akan dikerjakan sesuai estimasi. Admin akan mengabari lewat WhatsApp. Your Rank, Our Mission 👑</div>`}</div>`}</section>`}
+
+function Deletion(){
+ const [w,setW]=useState(''),[m,setM]=useState('');
+ const go=async()=>{if(!LIVE)return setM('Database belum terhubung (mode demo).');try{await api({action:'delete_request',wa:w});setM('Permintaan diterima. Jika nomor terdaftar, data akan dihapus/dianonimkan oleh admin.')}catch(e){setM(e.message)}};
+ return html`<div className="mt-3 space-y-2"><label>Minta penghapusan data (nomor WhatsApp)</label><input inputMode="tel" value=${w} onChange=${e=>setW(e.target.value)} placeholder="08xxxxxxxxxx"/><button className="btn2 !py-2" onClick=${go}>Kirim permintaan</button>${m&&html`<p className="text-xs">${m}</p>`}</div>`}
+
+function Info(){
+ const [open,setOpen]=useState(null);
+ const faq=[['Apakah akun saya aman?','Kami tidak meminta data sensitif lewat website. Detail proses dibahas langsung via WhatsApp.'],['Berapa lama pengerjaan?','Estimasi 1–3 hari untuk 10–30 bintang, tergantung antrean dan kondisi rank. Admin akan konfirmasi.'],['Bagaimana pembayaran?','Lewat DANA, GoPay, OVO, atau transfer bank. Status lunas hanya setelah verifikasi admin.'],['Bisa batal?','Bisa sebelum pengerjaan dimulai. Kebijakan lengkap ada di Syarat & Ketentuan.']];
+ const [legal,setLegal]=useState(null);
+ return html`<section id="faq" className="px-4 py-8 max-w-xl mx-auto"><h2 className="text-xl font-bold text-white mb-3">FAQ</h2>
+ ${faq.map(([q,a],i)=>html`<div key=${i} className="bg-panel border border-line rounded-xl mb-2"><button className="w-full text-left p-3 text-sm font-semibold text-white" onClick=${()=>setOpen(open===i?null:i)}>${q}</button>${open===i&&html`<p className="px-3 pb-3 text-sm fade">${a}</p>`}</div>`)}
+ <h2 className="text-xl font-bold text-white mt-8 mb-3">Testimoni</h2>
+ <div className="bg-panel border border-dashed border-line rounded-xl p-4 text-sm text-center">Belum ada testimoni. Hanya testimoni asli dari pelanggan yang akan ditampilkan di sini.</div>
+ <div className="mt-8 flex gap-2 text-xs"><button className="btn2" onClick=${()=>setLegal(legal==='t'?null:'t')}>Syarat & Ketentuan</button><button className="btn2" onClick=${()=>setLegal(legal==='p'?null:'p')}>Kebijakan Privasi</button></div>
+ ${legal==='t'&&html`<ul className="mt-3 text-xs list-disc pl-5 space-y-1 fade"><li>Pesanan sah setelah pembayaran diverifikasi admin.</li><li>Estimasi waktu bersifat perkiraan, bukan jaminan.</li><li>Pelanggan wajib memberi info rank dan target dengan benar.</li><li>Layanan joki melanggar aturan game tertentu; risiko akun ditanggung pelanggan.</li><li>Dilarang membagikan password/OTP melalui website ini.</li></ul>`}
+ ${legal==='p'&&html`<ul className="mt-3 text-xs list-disc pl-5 space-y-1 fade"><li>Kami hanya memakai nama, nomor WhatsApp, dan detail pesanan untuk memproses order.</li><li>Kami tidak meminta password, OTP, atau data login di form.</li><li>Data tidak dijual atau dibagikan ke pihak ketiga.</li><li>Data disimpan di database terenkripsi; hanya admin yang bisa melihatnya.</li></ul><${Deletion}/>`}
+ <footer className="text-center text-xs text-silver/50 mt-10"><a href="#top" className="text-ice">↑ Kembali ke atas</a><br/>© SHADOWRANK · Your Rank, Our Mission</footer></section>`}
+
+function Admin(){
+ const [st,setSt]=useState('init'),[em,setEm]=useState(''),[pw,setPw]=useState(''),[err,setErr]=useState('');
+ const [D,setD]=useState({o:[],c:[],d:[],s:[]}),[tab,setTab]=useState('o'),[q,setQ]=useState('');
+ const load=async()=>{
+  const {data:adm}=await sb.rpc('is_admin');
+  if(!adm){setSt('denied');return}
+  const [o,c,d,s]=await Promise.all([sb.from('orders').select('*,customers(name,wa)').order('created_at',{ascending:false}),sb.from('customers').select('*').order('created_at',{ascending:false}),sb.from('deletion_requests').select('*').order('created_at',{ascending:false}),sb.from('services').select('*').order('sort')]);
+  if(o.error||c.error)return setErr('Gagal memuat data: '+(o.error||c.error).message);
+  setD({o:o.data,c:c.data,d:d.data||[],s:s.data||[]});setSt('ok')};
+ useEffect(()=>{if(LIVE)sb.auth.getSession().then(({data})=>data.session?load():setSt('login'))},[]);
+ const login=async()=>{setErr('');const {error}=await sb.auth.signInWithPassword({email:em,password:pw});if(error)return setErr('Email atau password salah.');await load()};
+ const out=async()=>{await sb.auth.signOut();setSt('login')};
+ const run=async p=>{const {error}=await p;if(error)alert('Gagal: '+error.message);else load()};
+ if(!LIVE)return html`<section className="px-4 py-10 max-w-sm mx-auto text-sm">Dashboard admin membutuhkan Supabase. Isi SUPABASE_URL dan SUPABASE_ANON_KEY di bagian CFG, lalu muat ulang.</section>`;
+ if(st==='init')return html`<div className="p-10 text-center">Memuat…</div>`;
+ if(st!=='ok')return html`<section className="px-4 py-10 max-w-sm mx-auto"><h2 className="text-xl font-bold text-white mb-3">Login Admin</h2>
+  <div className="bg-panel border border-line rounded-2xl p-4 space-y-3"><input type="email" value=${em} onChange=${e=>setEm(e.target.value)} placeholder="Email admin" autoComplete="username"/><input type="password" value=${pw} onChange=${e=>setPw(e.target.value)} placeholder="Password" autoComplete="current-password"/>
+  <button className="btn w-full" onClick=${login}>Masuk</button>
+  ${st==='denied'&&html`<p className="text-xs text-red-300">Akun ini bukan admin. <button className="underline" onClick=${out}>Keluar</button></p>`}
+  ${err&&html`<p className="text-xs text-red-300">${err}</p>`}</div></section>`;
+ const valid=D.o.filter(o=>o.status!=='Dibatalkan');
+ const income=valid.filter(o=>o.payment_status==='lunas').reduce((a,o)=>a+o.total,0);
+ const pending=valid.filter(o=>o.payment_status!=='lunas').reduce((a,o)=>a+o.total,0);
+ const fo=D.o.filter(o=>(o.order_no+(o.customers?.name||'')+(o.customers?.wa||'')).toLowerCase().includes(q.toLowerCase()));
+ return html`<section className="px-4 py-6 max-w-3xl mx-auto"><div className="flex justify-between items-center mb-3"><h2 className="text-xl font-bold text-white">Dashboard Admin</h2><button className="text-xs text-ice" onClick=${out}>Keluar</button></div>
+ <div className="grid grid-cols-3 gap-2 text-center text-xs mb-4"><div className="bg-panel border border-line rounded-xl p-3">Pesanan<br/><b className="text-white text-lg">${D.o.length}</b></div><div className="bg-panel border border-line rounded-xl p-3">Pemasukan (lunas)<br/><b className="text-ice">${rp(income)}</b></div><div className="bg-panel border border-line rounded-xl p-3">Belum dibayar<br/><b className="text-silver">${rp(pending)}</b></div></div>
+ <div className="flex gap-2 mb-3 text-xs">${[['o','Pesanan'],['c','Pelanggan'],['s','Harga']].map(([k,t])=>html`<button key=${k} onClick=${()=>setTab(k)} className=${tab===k?'btn !py-2':'btn2 !py-2'}>${t}</button>`)}</div>
+ ${tab==='o'&&html`<div className="space-y-2"><input value=${q} onChange=${e=>setQ(e.target.value)} placeholder="Cari no. pesanan / nama / WhatsApp"/>${fo.map(o=>html`<div key=${o.id} className="bg-panel border border-line rounded-xl p-3 text-xs">
+  <b className="text-white">${o.order_no}</b> · ${o.customers?.name||'(dihapus)'} · ${o.customers?.wa||'-'}<br/>${o.rank_from} → ${o.rank_to} · ${o.qty} bintang × ${rp(o.unit_price)} = <b className="text-ice">${rp(o.total)}</b>${o.note?html`<br/>Catatan: ${o.note}`:''}
+  <div className="flex gap-2 mt-2"><select value=${o.status} onChange=${e=>run(sb.from('orders').update({status:e.target.value}).eq('id',o.id))}>${STATUS.map(s=>html`<option key=${s}>${s}</option>`)}</select>
+  <button className=${o.payment_status==='lunas'?'btn !py-1 !px-3':'btn2 !py-1 !px-3'} onClick=${()=>run(sb.from('orders').update(o.payment_status==='lunas'?{payment_status:'belum_dibayar',paid_at:null}:{payment_status:'lunas',paid_at:new Date().toISOString()}).eq('id',o.id))}>${o.payment_status==='lunas'?'Lunas ✓':'Verifikasi bayar'}</button>${o.payment_status==='lunas'&&o.customers?.wa&&html`<a className="btn2 !py-1 !px-3" target="_blank" rel="noopener" href=${`https://wa.me/${o.customers.wa}?text=${encodeURIComponent('Halo '+o.customers.name+', pembayaran pesanan '+o.order_no+' sudah kami verifikasi LUNAS. Terima kasih sudah mempercayai SHADOWRANK! Pesananmu segera kami kerjakan. Your Rank, Our Mission 👑')}`}>Ucapkan terima kasih</a>`}</div></div>`)}</div>`}
+ ${tab==='c'&&html`<div className="space-y-2">${D.d.filter(d=>d.status==='baru').map(d=>html`<div key=${d.id} className="bg-red-400/10 border border-red-400/30 rounded-xl p-3 text-xs flex justify-between items-center">Permintaan hapus data: ${d.wa}<button className="btn2 !py-1 !px-3" onClick=${()=>confirm('Anonimkan data pelanggan ini?')&&run(sb.rpc('process_deletion',{p_id:d.id}))}>Proses</button></div>`)}
+  ${D.c.map(c=>{const os=D.o.filter(o=>o.customer_id===c.id);return html`<div key=${c.id} className="bg-panel border border-line rounded-xl p-3 text-xs flex justify-between items-center"><span><b className="text-white">${c.name}</b> · ${c.wa||'-'}<br/>${os.length} pesanan · lunas ${rp(os.filter(o=>o.payment_status==='lunas'&&o.status!=='Dibatalkan').reduce((a,o)=>a+o.total,0))}</span>${c.wa&&html`<button className="btn2 !py-1 !px-3" onClick=${()=>confirm('Anonimkan pelanggan ini?')&&run(sb.rpc('anonymize_customer',{p_id:c.id}))}>Anonimkan</button>`}</div>`})}</div>`}
+ ${tab==='s'&&html`<div className="space-y-2">${D.s.map(s=>html`<div key=${s.code+s.price} className="bg-panel border border-line rounded-xl p-3 text-xs grid grid-cols-2 gap-2 items-end"><div><label>${s.name} — harga/bintang</label><input type="number" defaultValue=${s.price} onBlur=${e=>+e.target.value>0&&+e.target.value!==s.price&&run(sb.from('services').update({price:Math.round(+e.target.value)}).eq('code',s.code))}/></div>
+  <label className="flex items-center gap-2 pb-2"><input type="checkbox" className="!w-auto" defaultChecked=${s.active} onChange=${e=>run(sb.from('services').update({active:e.target.checked}).eq('code',s.code))}/> Aktif</label></div>`)}
+  <p className="text-xs text-silver/60">Perubahan harga hanya berlaku untuk pesanan baru; pesanan lama menyimpan harga saat dipesan.</p></div>`}</section>`}
+
+function App(){
+ const [loading,setLoading]=useState(true),[view,setView]=useState('home'),[services,setServices]=useState(TIERS.map(toSvc)),[pre,setPre]=useState(null),[warn,setWarn]=useState('');
+ useEffect(()=>{const t=setTimeout(()=>setLoading(false),900);
+  if(LIVE)sb.from('services').select('code,name,price,active').order('sort').then(({data,error})=>{if(error||!data?.length)setWarn('Gagal memuat harga terbaru dari server.');else setServices(data.map(r=>({...toSvc([r.code,r.name,r.price]),on:r.active})))});
+  return()=>clearTimeout(t)},[]);
+ if(loading)return html`<div className="min-h-screen flex flex-col items-center justify-center gap-4"><${Logo} size=${80}/><div className="w-8 h-8 rounded-full border-2 border-line border-t-volt spin"></div></div>`;
+ const pick=(sid,qty)=>{setPre({sid,qty,t:Date.now()});document.getElementById('pesan').scrollIntoView()};
+ return html`<div id="top" style=${{paddingBottom:view==='home'?86:0}}><${Nav} view=${view} setView=${setView}/><${Welcome}/>
+ ${!LIVE&&html`<div className="bg-amber-300/10 text-amber-300 text-xs text-center p-2">MODE DEMO: database belum terhubung. Pesanan TIDAK disimpan.</div>`}
+ ${warn&&html`<div className="bg-red-400/10 text-red-300 text-xs text-center p-2">${warn}</div>`}
+ ${view==='admin'?html`<${Admin}/>`:html`<${Hero}/><${Catalog} services=${services} pick=${pick}/><${OrderForm} services=${services} pre=${pre}/><${Track}/><${Info}/>`}${view==='home'&&html`<${Sticky} pre=${pre} services=${services}/>`}</div>`}
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
