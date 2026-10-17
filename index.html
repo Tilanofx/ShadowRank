@@ -41,6 +41,7 @@ label{font-size:.75rem;color:#8d98ad;display:block;margin-bottom:.25rem}
 @keyframes trl{0%{transform:translateX(24px);opacity:0}30%{opacity:.8}100%{transform:translateX(-44px);opacity:0}}
 .badge{display:grid;place-items:center;width:34px;height:38px;color:#04101f;font-weight:800;font-size:13px;clip-path:polygon(50% 0,100% 20%,100% 70%,50% 100%,0 70%,0 20%);flex:none;align-self:center}
 .modal{position:fixed;inset:0;z-index:50;background:rgba(2,4,10,.82);backdrop-filter:blur(6px);display:grid;place-items:center;padding:20px}
+      svg[aria-label^="Dua karakter"]{display:none}
 </style>
 </head>
 <body>
@@ -136,7 +137,7 @@ function Catalog({services,pick}){
  const [q,setQ]=useState({});
  const on=services.filter(s=>s.on);
  return html`<section id="katalog" className="px-4 py-8 max-w-xl mx-auto"><h2 className="text-xl font-bold text-white">Katalog Harga</h2><p className="text-xs text-silver/60 mb-3">Harga per bintang. Atur jumlah, lalu tekan Pesan.</p><${Duo}/>
- <div className="rounded-2xl border border-line overflow-hidden bg-panel/70">${on.map((s,i)=>{const n=q[s.id]??1;const set=v=>setQ({...q,[s.id]:Math.max(1,Math.min(500,Math.round(+v||1)))});return html`
+ <div className="rounded-2xl border border-line overflow-hidden bg-panel/70"><video src="wildhhs.mp4" autoPlay loop muted playsInline preload="auto" className="w-full mb-4" style=${{mixBlendMode:'screen'}}></video>${on.map((s,i)=>{const n=q[s.id]??1;const set=v=>setQ({...q,[s.id]:Math.max(1,Math.min(500,Math.round(+v||1)))});return html`
   <div key=${s.id} className="row p-4 border-b border-line last:border-0 flex gap-3" style=${{'--i':i}}>
    <span className="badge" style=${{background:BADGE[i%8]}}>${i+1}</span>
    <div className="flex-1">
