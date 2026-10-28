@@ -148,11 +148,11 @@ function Sticky({pre,services}){
   <div className="flex-1 text-xs min-w-0">${s?html`<b className="text-white">${s.name.replace('Joki Bintang ','')} × ${pre.qty}</b><br/><span className="text-ice">${rp(pre.qty*s.price)}</span>`:'Belum ada item produk yang dipilih.'}</div>
   <a href="#pesan" className="btn !py-2 text-sm whitespace-nowrap">Pesan Sekarang!</a></div></div>`}
 
-function Catalog({services,pick}){
+function Catalog({services,pick,sync}){
  const [q,setQ]=useState({});
  const on=services.filter(s=>s.on);
  return html`<section id="katalog" className="px-4 py-8 max-w-xl mx-auto"><h2 className="text-xl font-bold text-white">Katalog Harga</h2><p className="text-xs text-silver/60 mb-3">Harga per bintang. Atur jumlah, lalu tekan Pesan.</p><${Duo}/>
- <div className="rounded-2xl border border-line overflow-hidden bg-panel/70"><video src="wildhhs.mp4" autoPlay loop muted playsInline preload="auto" className="video-anime mb-4" style=${{mixBlendMode:'screen'}}></video>${on.map((s,i)=>{const n=q[s.id]??1;const set=v=>setQ({...q,[s.id]:Math.max(1,Math.min(MAXQ[s.name.replace('Joki Bintang ','')]??1000,Math.round(+v||1)))});
+ <div className="rounded-2xl border border-line overflow-hidden bg-panel/70"><video src="wildhhs.mp4" autoPlay loop muted playsInline preload="auto" className="video-anime mb-4" style=${{mixBlendMode:'screen'}}></video>${on.map((s,i)=>{const n=q[s.id]??1;const set=v=>{const val=Math.max(1,Math.min(MAXQ[s.name.replace('Joki Bintang ','')]??1000,Math.round(+v||1)));setQ({...q,[s.id]:val});sync(s.id,val)};
   return html`<div key=${s.id} className="row p-4 border-b border-line last:border-0 flex gap-3" style=${{'--i':i}}>
    <span className="badge" style=${{background:BADGE[i%8]}}>${i+1}</span>
    <div className="flex-1">
@@ -285,10 +285,11 @@ function App(){
   return()=>clearTimeout(t)},[]);
  if(loading)return html`<div className="min-h-screen flex flex-col items-center justify-center gap-4"><${Logo} size=${80}/><div className="w-8 h-8 rounded-full border-2 border-line border-t-volt spin"></div></div>`;
  const pick=(sid,qty)=>{setPre({sid,qty,t:Date.now()});document.getElementById('pesan').scrollIntoView()};
+ const sync=(sid,qty)=>setPre({sid,qty,t:Date.now()});
  return html`<div id="top" style=${{paddingBottom:view==='home'?86:0}}><${Nav} view=${view} setView=${setView}/><${Welcome}/>
  ${!LIVE&&html`<div className="bg-amber-300/10 text-amber-300 text-xs text-center p-2">MODE DEMO: database belum terhubung. Pesanan TIDAK disimpan.</div>`}
  ${warn&&html`<div className="bg-red-400/10 text-red-300 text-xs text-center p-2">${warn}</div>`}
- ${view==='admin'?html`<${Admin}/>`:html`<${Hero}/><${Catalog} services=${services} pick=${pick}/><${OrderForm} services=${services} pre=${pre}/><${Track}/><${Info}/>`}${view==='home'&&html`<${Sticky} pre=${pre} services=${services}/>`}</div>`}
+ ${view==='admin'?html`<${Admin}/>`:html`<${Hero}/><${Catalog} services=${services} pick=${pick} sync=${sync}/><${OrderForm} services=${services} pre=${pre}/><${Track}/><${Info}/>`}${view==='home'&&html`<${Sticky} pre=${pre} services=${services}/>`}</div>`}
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
 </script>
 </body>
