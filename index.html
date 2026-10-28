@@ -69,9 +69,11 @@ const api=async body=>{const {data,error}=await sb.functions.invoke('shadowrank-
 const TIERS=[['master','Master',2000],['grandmaster','Grandmaster',3000],['epic','Epic',5000],['legend','Legend',6000],['mythic','Mythic',10000],['honor','Mythic Honor',15000],['glory','Mythic Glory',20000],['immortal','Mythic Immortal',25000]];
 const RANKS=TIERS.map(t=>t[1]);
    // Bintang untuk naik dari tier ke tier berikutnya (urutan sama dengan TIERS). Sesuaikan jika perlu.
-const STARS=[16,25,25,25,25,25,50];
+const STARS=[25,25,25,25,25,25,50];
 // Diskon volume [minimal bintang, persen]. Isi [] untuk mematikan diskon.
 const DISC=[[100,.07],[50,.05],[20,.03]];
+   // Batas jumlah bintang di katalog per tier
+const MAXQ={'Master':25,'Grandmaster':25,'Epic':25,'Legend':25,'Mythic':25,'Mythic Honor':25,'Mythic Glory':50,'Mythic Immortal':1000};
 const STATUS=['Menunggu','Diproses','Selesai','Dibatalkan'];
 const toSvc=t=>({id:t[0],name:'Joki Bintang '+t[1],desc:'Naik bintang di tier '+t[1]+' oleh joki berpengalaman.',unit:'bintang',price:t[2],min:1,on:true});
 
@@ -150,12 +152,12 @@ function Catalog({services,pick}){
  const [q,setQ]=useState({});
  const on=services.filter(s=>s.on);
  return html`<section id="katalog" className="px-4 py-8 max-w-xl mx-auto"><h2 className="text-xl font-bold text-white">Katalog Harga</h2><p className="text-xs text-silver/60 mb-3">Harga per bintang. Atur jumlah, lalu tekan Pesan.</p><${Duo}/>
- <div className="rounded-2xl border border-line overflow-hidden bg-panel/70"><video src="wildhhs.mp4" autoPlay loop muted playsInline preload="auto" className="video-anime mb-4" style=${{mixBlendMode:'screen'}}></video>${on.map((s,i)=>{const n=q[s.id]??1;const set=v=>setQ({...q,[s.id]:Math.max(1,Math.min(500,Math.round(+v||1)))});return html`
+ <div className="rounded-2xl border border-line overflow-hidden bg-panel/70"><video src="wildhhs.mp4" autoPlay loop muted playsInline preload="auto" className="video-anime mb-4" style=${{mixBlendMode:'screen'}}></video>${on.map((s,i)=>{const n=q[s.id]??1;const set=v=>setQ({...q,[s.id]:Math.max(1,Math.min(MAXQ[s.name.replace('Joki Bintang ','')]??1000,Math.round(+v||1)))
   <div key=${s.id} className="row p-4 border-b border-line last:border-0 flex gap-3" style=${{'--i':i}}>
    <span className="badge" style=${{background:BADGE[i%8]}}>${i+1}</span>
    <div className="flex-1">
     <div className="flex justify-between items-baseline"><div><b className="text-white">${s.name.replace('Joki Bintang ','')}</b><div className="text-xs text-ice">${rp(s.price)} <span className="text-silver/50">/ bintang</span></div></div><b className="text-white">${rp(n*s.price)}</b></div>
-    <div className="flex justify-between items-center mt-3"><div className="flex items-center gap-1"><button className="stp" aria-label="Kurangi" onClick=${()=>set(n-1)}>−</button><input type="number" min="1" max="500" value=${n} onChange=${e=>set(e.target.value)} style=${{width:64,textAlign:'center'}}/><button className="stp" aria-label="Tambah" onClick=${()=>set(n+1)}>+</button></div>
+    <div className="flex justify-between items-center mt-3"><div className="flex items-center gap-1"><button className="stp" aria-label="Kurangi" onClick=${()=>set(n-1)}>−</button><input type="number" min="1" value=${n} onChange=${e=>set(e.target.value)} style=${{width:64,textAlign:'center'}}/><button className="stp" aria-label="Tambah" onClick=${()=>set(n+1)}>+</button></div>
     <button className="btn !py-2 !px-5 text-sm" onClick=${()=>pick(s.id,n)}>Pesan</button></div></div></div>`})}</div></section>`}
 
 function OrderForm({services,pre}){
@@ -175,7 +177,7 @@ const dp=(DISC.find(d=>stars>=d[0])||[0,0])[1],disc=Math.round(sub*dp/100)*100,e
   if(!LIVE)return setErr('Database belum terhubung (mode demo). Pesanan tidak dapat disimpan.');
   if(f.name.trim().length<2||!/^(\+?62|0)8\d{7,12}$/.test(f.wa.replace(/[\s-]/g,'')))return setErr('Isi nama dan nomor WhatsApp valid (08xx atau 628xx).');
   if(RANKS.indexOf(f.to)<RANKS.indexOf(f.from))return setErr('Rank tujuan harus sama atau lebih tinggi dari rank saat ini.');
-  if(!(stars>=1&&stars<=500))return setErr('Jumlah bintang 1–500.');
+  if(!(stars>=1&&stars<=1000))return setErr('Jumlah bintang 1–1000.');
        setBusy(true);
   try{setRes(await api({action:'create_order',name:f.name,wa:f.wa,service:s.id,rank_from:f.from,rank_to:f.to,qty:stars,note:('Rincian: '+rows.map(r=>r.t+' '+r.q+'x'+r.p).join(', ')+' | Diskon '+disc+' | Total '+est+(f.note?' | '+f.note:'')).slice(0,300),hp:f.hp}))}
   catch(e){setErr(e.message)}
@@ -200,7 +202,7 @@ const dp=(DISC.find(d=>stars>=d[0])||[0,0])[1],disc=Math.round(sub*dp/100)*100,e
   <input tabIndex="-1" autoComplete="off" aria-hidden="true" style=${{position:'absolute',left:'-9999px',width:1,height:1,opacity:0}} value=${f.hp} onChange=${set('hp')}/>
   <div className="grid grid-cols-2 gap-3"><div><label>Rank Saat Ini</label><select value=${f.from} onChange=${set('from')}>${RANKS.map(r=>html`<option key=${r}>${r}</option>`)}</select></div>.
   <div><label>Rank Tujuan</label><select value=${f.to} onChange=${set('to')}>${RANKS.map(r=>html`<option key=${r}>${r}</option>`)}</select></div></div>
-    ${auto?html`<p className="text-xs text-silver/70 bg-ink border border-line rounded-lg p-2">Jumlah bintang otomatis dari rank awal ke tujuan: <b className="text-white">${stars} bintang</b>. Untuk pesan bintang saja, samakan Rank Tujuan dengan Rank Saat Ini.</p>`:html`<div><label>Jumlah Bintang (1–500)</label><input type="number" min="1" max="500" value=${f.qty} onChange=${set('qty')}/></div>`}
+    ${auto?html`<p className="text-xs text-silver/70 bg-ink border border-line rounded-lg p-2">Jumlah bintang otomatis dari rank awal ke tujuan: <b className="text-white">${stars} bintang</b>. Untuk pesan bintang saja, samakan Rank Tujuan dengan Rank Saat Ini.</p>`:html`<div><label>Jumlah Bintang (1–1000)</label><input type="number" min="1" max="500" value=${f.qty} onChange=${set('qty')}/></div>`}
   <div><label>Catatan (opsional)</label><textarea rows="2" maxLength="300" value=${f.note} onChange=${set('note')} placeholder="Hero favorit, jam bermain, dll."></textarea></div>
   <p className="text-xs text-amber-300/90 bg-amber-300/10 rounded-lg p-2">🔒 Jangan kirim password, OTP, atau data login game di form maupun catatan.</p>
     <div className="rounded-xl bg-ink border border-line p-3 text-sm">${rows.map(r=>html`<div key=${r.t} className="flex justify-between text-xs mb-1"><span>${r.t}: ${r.q} × ${rp(r.p)}</span><b className="text-silver">${rp(r.q*r.p)}</b></div>`)}<div className="flex justify-between text-xs border-t border-line pt-2"><span>Subtotal (${stars} bintang)</span><b>${rp(sub)}</b></div>${disc>0&&html`<div className="flex justify-between text-xs mt-1 text-emerald-300"><span>Diskon ${Math.round(dp*100)}%</span><b>−${rp(disc)}</b></div>`}<div className="flex justify-between items-center border-t border-line mt-2 pt-2"><span>Total</span><b className="text-2xl text-white">${rp(est)}</b></div><p className="text-xs text-silver/50 mt-1">Diskon otomatis untuk 20+ bintang. Total akhir dikonfirmasi admin.</p></div>
