@@ -142,33 +142,33 @@ function Welcome(){
   <p className="text-xs mt-3 text-amber-300/90">Kami tidak pernah meminta password atau OTP lewat website.</p>
   <button className="btn w-full mt-4" onClick=${close}>Mulai Pesan</button></div></div>`}
 
-function Sticky({pre,services}){
- const s=pre&&services.find(x=>x.id===pre.sid);
+function Sticky({cart,services}){
+ const items=services.filter(x=>cart[x.id]>0);
+ const stars=items.reduce((a,x)=>a+cart[x.id],0),sub=items.reduce((a,x)=>a+cart[x.id]*x.price,0);
  return html`<div className="fixed bottom-0 inset-x-0 z-20 bg-black/90 backdrop-blur border-t border-line px-4 pt-3" style=${{paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 12px)'}}><div className="max-w-xl mx-auto flex items-center gap-3">
-  <div className="flex-1 text-xs min-w-0">${s?html`<b className="text-white">${s.name.replace('Joki Bintang ','')} × ${pre.qty}</b><br/><span className="text-ice">${rp(pre.qty*s.price)}</span>`:'Belum ada item produk yang dipilih.'}</div>
+  <div className="flex-1 text-xs min-w-0">${items.length?html`<b className="text-white">${items.map(x=>x.name.replace('Joki Bintang ','')+' ×'+cart[x.id]).join(', ')}</b><br/><span className="text-ice">${stars} bintang · ${rp(sub)}</span>`:'Belum ada item produk yang dipilih.'}</div>
   <a href="#pesan" className="btn !py-2 text-sm whitespace-nowrap">Pesan Sekarang!</a></div></div>`}
 
-function Catalog({services,pick,sync}){
- const [q,setQ]=useState({});
+function Catalog({services,cart,setQty}){
  const on=services.filter(s=>s.on);
- return html`<section id="katalog" className="px-4 py-8 max-w-xl mx-auto"><h2 className="text-xl font-bold text-white">Katalog Harga</h2><p className="text-xs text-silver/60 mb-3">Harga per bintang. Atur jumlah, lalu tekan Pesan.</p><${Duo}/>
- <div className="rounded-2xl border border-line overflow-hidden bg-panel/70"><video src="wildhhs.mp4" autoPlay loop muted playsInline preload="auto" className="video-anime mb-4" style=${{mixBlendMode:'screen'}}></video>${on.map((s,i)=>{const n=q[s.id]??1;const set=v=>{const val=Math.max(1,Math.min(MAXQ[s.name.replace('Joki Bintang ','')]??1000,Math.round(+v||1)));setQ({...q,[s.id]:val});sync(s.id,val)};
+ return html`<section id="katalog" className="px-4 py-8 max-w-xl mx-auto"><h2 className="text-xl font-bold text-white">Katalog Harga</h2><p className="text-xs text-silver/60 mb-3">Atur jumlah bintang di tier yang kamu mau (boleh lebih dari satu tier), lalu tekan Pesan Sekarang.</p><${Duo}/>
+ <div className="rounded-2xl border border-line overflow-hidden bg-panel/70"><video src="wildhhs.mp4" autoPlay loop muted playsInline preload="auto" className="video-anime mb-4" style=${{mixBlendMode:'screen'}}></video>${on.map((s,i)=>{const nm=s.name.replace('Joki Bintang ','');const n=cart[s.id]||0;const set=v=>setQty(s.id,Math.max(0,Math.min(MAXQ[nm]??1000,Math.round(+v||0))));
   return html`<div key=${s.id} className="row p-4 border-b border-line last:border-0 flex gap-3" style=${{'--i':i}}>
    <span className="badge" style=${{background:BADGE[i%8]}}>${i+1}</span>
    <div className="flex-1">
-    <div className="flex justify-between items-baseline"><div><b className="text-white">${s.name.replace('Joki Bintang ','')}</b><div className="text-xs text-ice">${rp(s.price)} <span className="text-silver/50">/ bintang</span></div></div><b className="text-white">${rp(n*s.price)}</b></div>
-    <div className="flex justify-between items-center mt-3"><div className="flex items-center gap-1"><button className="stp" aria-label="Kurangi" onClick=${()=>set(n-1)}>−</button><input type="number" min="1" value=${n} onChange=${e=>set(e.target.value)} style=${{width:64,textAlign:'center'}}/><button className="stp" aria-label="Tambah" onClick=${()=>set(n+1)}>+</button></div>
-    <button className="btn !py-2 !px-5 text-sm" onClick=${()=>pick(s.id,n)}>Pesan</button></div></div></div>`})}</div></section>`}
+    <div className="flex justify-between items-baseline"><div><b className="text-white">${nm}</b><div className="text-xs text-ice">${rp(s.price)} <span className="text-silver/50">/ bintang</span></div></div><b className="text-white">${rp(n*s.price)}</b></div>
+    <div className="flex items-center gap-1 mt-3"><button className="stp" aria-label="Kurangi" onClick=${()=>set(n-1)}>−</button><input type="number" min="0" value=${n} onChange=${e=>set(e.target.value)} style=${{width:64,textAlign:'center'}}/><button className="stp" aria-label="Tambah" onClick=${()=>set(n+1)}>+</button></div></div></div>`})}</div></section>`}
 
-function OrderForm({services,pre}){
+function OrderForm({services,cart}){
  const act=services.filter(s=>s.on);
  const [f,setF]=useState({name:'',wa:'',sid:act[0]?.id,from:'Master',to:'Grandmaster',qty:1,note:'',hp:''});
  const [busy,setBusy]=useState(false),[err,setErr]=useState(''),[res,setRes]=useState(null),[agree,setAgree]=useState(false);
- useEffect(()=>{if(pre){const t=services.find(x=>x.id===pre.sid);const nm=t?t.name.replace('Joki Bintang ',''):'Master';setF(x=>({...x,sid:pre.sid,from:nm,to:nm,qty:pre.qty}))}},[pre]);
- const s=services.find(x=>x.name==='Joki Bintang '+f.from)||act[0];
+ const items=act.filter(x=>cart[x.id]>0),cartMode=items.length>0;
+ const s=cartMode?items[0]:(services.find(x=>x.name==='Joki Bintang '+f.from)||act[0]);
 const priceOf=t=>(services.find(x=>x.name==='Joki Bintang '+t)||{}).price||0;
 const ia=RANKS.indexOf(f.from),ib=RANKS.indexOf(f.to),auto=ib>ia;
-const rows=auto?RANKS.slice(ia,ib).map((t,i)=>({t,q:STARS[ia+i],p:priceOf(t)})):[{t:f.from,q:Math.max(0,+f.qty||0),p:priceOf(f.from)}];
+const rows=cartMode?items.map(x=>({t:x.name.replace('Joki Bintang ',''),q:cart[x.id],p:x.price})):auto?RANKS.slice(ia,ib).map((t,i)=>({t,q:STARS[ia+i],p:priceOf(t)})):[{t:f.from,q:Math.max(0,+f.qty||0),p:priceOf(f.from)}];
+const rf=cartMode?rows[0].t:f.from,rt=cartMode?rows[rows.length-1].t:f.to;
 const stars=rows.reduce((x,r)=>x+r.q,0),sub=rows.reduce((x,r)=>x+r.q*r.p,0);
 const dp=(DISC.find(d=>stars>=d[0])||[0,0])[1],disc=Math.round(sub*dp/100)*100,est=sub-disc;
  const set=k=>e=>setF({...f,[k]:e.target.value});
@@ -176,14 +176,14 @@ const dp=(DISC.find(d=>stars>=d[0])||[0,0])[1],disc=Math.round(sub*dp/100)*100,e
   setErr('');
   if(!LIVE)return setErr('Database belum terhubung (mode demo). Pesanan tidak dapat disimpan.');
   if(f.name.trim().length<2||!/^(\+?62|0)8\d{7,12}$/.test(f.wa.replace(/[\s-]/g,'')))return setErr('Isi nama dan nomor WhatsApp valid (08xx atau 628xx).');
-  if(RANKS.indexOf(f.to)<RANKS.indexOf(f.from))return setErr('Rank tujuan harus sama atau lebih tinggi dari rank saat ini.');
+  if(!cartMode&&RANKS.indexOf(f.to)<RANKS.indexOf(f.from))return setErr('Rank tujuan harus sama atau lebih tinggi dari rank saat ini.');
   if(!(stars>=1&&stars<=1000))return setErr('Jumlah bintang 1–1000.');
        setBusy(true);
-  try{setRes(await api({action:'create_order',name:f.name,wa:f.wa,service:s.id,rank_from:f.from,rank_to:f.to,qty:stars,note:('Rincian: '+rows.map(r=>r.t+' '+r.q+'x'+r.p).join(', ')+' | Diskon '+disc+' | Total '+est+(f.note?' | '+f.note:'')).slice(0,300),hp:f.hp}))}
+  try{setRes(await api({action:'create_order',name:f.name,wa:f.wa,service:s.id,rank_from:rf,rank_to:rt,qty:stars,note:('Rincian: '+rows.map(r=>r.t+' '+r.q+'x'+r.p).join(', ')+' | Diskon '+disc+' | Total '+est+(f.note?' | '+f.note:'')).slice(0,300),hp:f.hp}))}
   catch(e){setErr(e.message)}
   setBusy(false)};
  if(res){
-  const msg=`Halo SHADOWRANK, saya sudah membuat pesanan:\n\nNo. Pesanan: ${res.order_no}\nNama: ${f.name}\nLayanan: ${s.name}\nRank Awal: ${f.from}\nTarget: ${f.to}\nJumlah: ${stars} bintang\nDiskon: ${rp(disc)}\nTotal: ${rp(est)}\nCatatan: ${f.note||'-'}\n\nMohon info pembayaran. Saya tidak akan membagikan password/OTP.`;
+  const msg=`Halo SHADOWRANK, saya sudah membuat pesanan:\n\nNo. Pesanan: ${res.order_no}\nNama: ${f.name}\nLayanan: ${s.name}\nRincian: ${cartMode?rows.map(r=>r.t+' '+r.q+' bintang').join(', '):f.from+' → '+f.to}\nJumlah: ${stars} bintang\nDiskon: ${rp(disc)}\nTotal: ${rp(est)}\nCatatan: ${f.note||'-'}\n\nMohon info pembayaran. Saya tidak akan membagikan password/OTP.`;
   return html`<section id="pesan" className="px-4 py-8 max-w-xl mx-auto"><div className="bg-panel border border-volt rounded-2xl p-5 text-center fade glow">
    <div className="text-3xl">✅</div><h2 className="text-lg font-bold text-white mt-1">Pesanan Tersimpan</h2>
    <p className="text-xs mt-1">Nomor pesanan Anda (simpan untuk cek status)</p><b className="block text-2xl text-ice tracking-wider my-1">${res.order_no}</b>
@@ -200,9 +200,9 @@ const dp=(DISC.find(d=>stars>=d[0])||[0,0])[1],disc=Math.round(sub*dp/100)*100,e
   <div><label>Nama / Nickname</label><input maxLength="60" value=${f.name} onChange=${set('name')} placeholder="Nickname in-game"/></div>
   <div><label>Nomor WhatsApp</label><input inputMode="tel" value=${f.wa} onChange=${set('wa')} placeholder="08xxxxxxxxxx"/></div>
   <input tabIndex="-1" autoComplete="off" aria-hidden="true" style=${{position:'absolute',left:'-9999px',width:1,height:1,opacity:0}} value=${f.hp} onChange=${set('hp')}/>
-  <div className="grid grid-cols-2 gap-3"><div><label>Rank Saat Ini</label><select value=${f.from} onChange=${set('from')}>${RANKS.map(r=>html`<option key=${r}>${r}</option>`)}</select></div>
+  <div className=${cartMode?'hidden':'grid grid-cols-2 gap-3'}><div><label>Rank Saat Ini</label><select value=${f.from} onChange=${set('from')}>${RANKS.map(r=>html`<option key=${r}>${r}</option>`)}</select></div>
   <div><label>Rank Tujuan</label><select value=${f.to} onChange=${set('to')}>${RANKS.map(r=>html`<option key=${r}>${r}</option>`)}</select></div></div>
-    ${auto?html`<p className="text-xs text-silver/70 bg-ink border border-line rounded-lg p-2">Jumlah bintang otomatis dari rank awal ke tujuan: <b className="text-white">${stars} bintang</b>. Untuk pesan bintang saja, samakan Rank Tujuan dengan Rank Saat Ini.</p>`:html`<div><label>Jumlah Bintang (1–1000)</label><input type="number" min="1" max="1000" value=${f.qty} onChange=${set('qty')}/></div>`}
+    ${cartMode?html`<p className="text-xs text-silver/70 bg-ink border border-line rounded-lg p-2">Pesanan mengikuti pilihan di katalog: <b className="text-white">${stars} bintang</b>. Set semua jumlah di katalog ke 0 untuk memakai Rank Saat Ini dan Rank Tujuan.</p>`:auto?html`<p className="text-xs text-silver/70 bg-ink border border-line rounded-lg p-2">Jumlah bintang otomatis dari rank awal ke tujuan: <b className="text-white">${stars} bintang</b>. Untuk pesan bintang saja, samakan Rank Tujuan dengan Rank Saat Ini.</p>`:html`<div><label>Jumlah Bintang (1–1000)</label><input type="number" min="1" max="1000" value=${f.qty} onChange=${set('qty')}/></div>`}
   <div><label>Catatan (opsional)</label><textarea rows="2" maxLength="300" value=${f.note} onChange=${set('note')} placeholder="Hero favorit, jam bermain, dll."></textarea></div>
   <p className="text-xs text-amber-300/90 bg-amber-300/10 rounded-lg p-2">🔒 Jangan kirim password, OTP, atau data login game di form maupun catatan.</p>
     <div className="rounded-xl bg-ink border border-line p-3 text-sm">${rows.map(r=>html`<div key=${r.t} className="flex justify-between text-xs mb-1"><span>${r.t}: ${r.q} × ${rp(r.p)}</span><b className="text-silver">${rp(r.q*r.p)}</b></div>`)}<div className="flex justify-between text-xs border-t border-line pt-2"><span>Subtotal (${stars} bintang)</span><b>${rp(sub)}</b></div>${disc>0&&html`<div className="flex justify-between text-xs mt-1 text-emerald-300"><span>Diskon ${Math.round(dp*100)}%</span><b>−${rp(disc)}</b></div>`}<div className="flex justify-between items-center border-t border-line mt-2 pt-2"><span>Total</span><b className="text-2xl text-white">${rp(est)}</b></div><p className="text-xs text-silver/50 mt-1">Diskon otomatis untuk 20+ bintang. Total akhir dikonfirmasi admin.</p></div>
@@ -279,17 +279,16 @@ function Admin(){
   <p className="text-xs text-silver/60">Perubahan harga hanya berlaku untuk pesanan baru; pesanan lama menyimpan harga saat dipesan.</p></div>`}</section>`}
 
 function App(){
- const [loading,setLoading]=useState(true),[view,setView]=useState('home'),[services,setServices]=useState(TIERS.map(toSvc)),[pre,setPre]=useState(null),[warn,setWarn]=useState('');
+ const [loading,setLoading]=useState(true),[view,setView]=useState('home'),[services,setServices]=useState(TIERS.map(toSvc)),[cart,setCart]=useState({}),[warn,setWarn]=useState('');
  useEffect(()=>{const t=setTimeout(()=>setLoading(false),900);
   if(LIVE)sb.from('services').select('code,name,price,active').order('sort').then(({data,error})=>{if(error||!data?.length)setWarn('Gagal memuat harga terbaru dari server.');else setServices(data.map(r=>({...toSvc([r.code,r.name,r.price]),on:r.active})))});
   return()=>clearTimeout(t)},[]);
  if(loading)return html`<div className="min-h-screen flex flex-col items-center justify-center gap-4"><${Logo} size=${80}/><div className="w-8 h-8 rounded-full border-2 border-line border-t-volt spin"></div></div>`;
- const pick=(sid,qty)=>{setPre({sid,qty,t:Date.now()});document.getElementById('pesan').scrollIntoView()};
- const sync=(sid,qty)=>setPre({sid,qty,t:Date.now()});
+ const setQty=(sid,qty)=>setCart(c=>{const n={...c};if(qty>0)n[sid]=qty;else delete n[sid];return n});
  return html`<div id="top" style=${{paddingBottom:view==='home'?86:0}}><${Nav} view=${view} setView=${setView}/><${Welcome}/>
  ${!LIVE&&html`<div className="bg-amber-300/10 text-amber-300 text-xs text-center p-2">MODE DEMO: database belum terhubung. Pesanan TIDAK disimpan.</div>`}
  ${warn&&html`<div className="bg-red-400/10 text-red-300 text-xs text-center p-2">${warn}</div>`}
- ${view==='admin'?html`<${Admin}/>`:html`<${Hero}/><${Catalog} services=${services} pick=${pick} sync=${sync}/><${OrderForm} services=${services} pre=${pre}/><${Track}/><${Info}/>`}${view==='home'&&html`<${Sticky} pre=${pre} services=${services}/>`}</div>`}
+ ${view==='admin'?html`<${Admin}/>`:html`<${Hero}/><${Catalog} services=${services} cart=${cart} setQty=${setQty}/><${OrderForm} services=${services} cart=${cart}/><${Track}/><${Info}/>`}${view==='home'&&html`<${Sticky} cart=${cart} services=${services}/>`}</div>`}
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
 </script>
 </body>
